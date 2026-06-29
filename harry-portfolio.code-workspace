@@ -1,0 +1,16 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "../portfolio"
+		},
+		{
+			"path": "../apple-scroll-video"
+		}
+	],
+	"settings": {
+		"liveServer.settings.port": 5501
+	}
+}

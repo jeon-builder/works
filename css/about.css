@@ -21,6 +21,24 @@ body {
 	font-family: 'Noto Sans JP', 'Apple SD Gothic Neo', sans-serif;
 }
 
+/* ── Video Background ── */
+.bg-video-wrap {
+	position: fixed;
+	inset: 0;
+	z-index: -1;
+	overflow: hidden;
+}
+.bg-video {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+}
+.bg-video__overlay {
+	position: absolute;
+	inset: 0;
+	background: rgba(0, 0, 0, 0.65);
+}
+
 /* ── Nav (共通) ── */
 .page-nav__inr a {
 	color: rgba(232, 224, 208, 0.75);
@@ -120,7 +138,7 @@ body {
 	margin-bottom: 12px;
 }
 .about-hero__role {
-	font-size: 1.3rem;
+	font-size: 2rem;
 	letter-spacing: 0.18em;
 	color: var(--color-muted);
 	text-transform: uppercase;
@@ -141,7 +159,7 @@ body {
 	flex-direction: column;
 	align-items: center;
 	gap: 8px;
-	font-size: 1.0rem;
+	font-size: 1.4rem;
 	letter-spacing: 0.2em;
 	color: var(--color-muted);
 }
@@ -299,7 +317,7 @@ body {
 	background: rgba(201, 169, 110, 0.04);
 }
 .contact-item__icon {
-	font-size: 2rem;
+	font-size: 4rem;
 	width: 40px;
 	text-align: center;
 	flex-shrink: 0;
@@ -323,13 +341,53 @@ body {
 }
 
 /* ── Footer ── */
-.about-footer {
-	padding: 40px;
-	text-align: center;
-	font-size: 1.2rem;
-	color: var(--color-muted);
-	border-top: 1px solid var(--color-line);
-	letter-spacing: 0.08em;
+.page-foot {
+	position: relative;
+	z-index: 12;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: 0.75rem;
+	height: 9rem;
+	background: #080706;
+	border-top: 1px solid rgba(201, 169, 110, 0.4);
+	overflow: hidden;
+}
+.page-foot::before {
+	content: '';
+	position: absolute;
+	inset: 0;
+	background: radial-gradient(ellipse 80% 120% at 50% 100%, rgba(201, 169, 110, 0.1) 0%, transparent 65%);
+	pointer-events: none;
+}
+.page-foot__ornament {
+	position: relative;
+	z-index: 1;
+	display: flex;
+	align-items: center;
+	gap: 0.6rem;
+	width: min(200px, 40vw);
+}
+.page-foot__ornament span {
+	flex: 1;
+	height: 1px;
+	background: linear-gradient(90deg, transparent, rgba(201, 169, 110, 0.6), transparent);
+}
+.page-foot__ornament b {
+	font-weight: normal;
+	font-size: 0.6rem;
+	color: rgba(201, 169, 110, 0.6);
+}
+.page-foot__copy {
+	position: relative;
+	z-index: 1;
+	margin: 0;
+	font-family: 'Cinzel', 'Times New Roman', serif;
+	font-size: 1.4rem;
+	letter-spacing: 0.12em;
+	color: rgba(237, 228, 210, 0.9);
+	text-transform: uppercase;
 }
 
 /* ── Responsive ── */

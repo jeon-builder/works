@@ -10,12 +10,20 @@
 </head>
 <body>
 
+	<!-- ── Video Background ── -->
+	<div class="bg-video-wrap">
+		<video class="bg-video" autoplay muted loop playsinline>
+			<source src="images/background.MP4" type="video/mp4">
+		</video>
+		<div class="bg-video__overlay"></div>
+	</div>
+
 	<nav class="page-nav page-nav--local" aria-label="ページナビゲーション">
 		<div class="page-nav__inr">
 			<a href="index.html" class="page-nav__brand">職務経歴書</a>
 			<a href="index.html" class="page-nav__link">概要</a>
 			<a href="works.html" class="page-nav__link">実績</a>
-			<a href="about.html" class="page-nav__link is-current" aria-current="page">About</a>
+			<a href="about.html" class="page-nav__link is-current" aria-current="page">プロフィール</a>
 		</div>
 	</nav>
 
@@ -27,14 +35,7 @@
 		</div>
 		<h1 class="about-hero__en">JEON RYANGWON</h1>
 		<p class="about-hero__role">Web Engineer / Front-end Coder</p>
-		<p class="about-hero__tagline">
-			4つの戦場を越えてきた。<br>
-			——そして、これが私だ。
 		</p>
-		<div class="about-hero__scroll" aria-hidden="true">
-			<span>SCROLL</span>
-			<span class="about-hero__scroll-line"></span>
-		</div>
 	</section>
 
 	<!-- ── Profile ── -->
@@ -52,7 +53,7 @@
 				<p>
 					AIという杖を手に、4つの戦場で戦った。<br>
 					LP 42件を1人完結で高速納品し、コーポレート29社を内製化で支え、
-					継続支援で97件以上に誠実に向き合い、<em>AI 導入で工数を▼47%</em> 削減した。
+					継続支援で97件以上に誠実に向き合い、<em>AI 導入で工数を▼66.5%</em> 削減した。
 				</p>
 				<br>
 				<p>
@@ -63,7 +64,7 @@
 			<table class="profile-table">
 				<tr>
 					<th>名前</th>
-					<td>전량원 / JEON RYANGWON</td>
+					<td>ジョン・リャンウォン / JEON RYANGWON</td>
 				</tr>
 				<tr>
 					<th>出身</th>
@@ -80,10 +81,6 @@
 				<tr>
 					<th>得意</th>
 					<td>LP 高速制作・WordPress 構築・AI 実務統合</td>
-				</tr>
-				<tr>
-					<th>言語</th>
-					<td>韓国語（母語）・日本語・English</td>
 				</tr>
 			</table>
 		</div>
@@ -223,7 +220,7 @@
 					</li>
 					<li class="skill-item">
 						<div class="skill-item__head">
-							<span class="skill-item__name">フォーム設定 / MW WP Form</span>
+							<span class="skill-item__name">フォーム設定 / Contact Form 7</span>
 							<span class="skill-item__level">Advanced</span>
 						</div>
 						<div class="skill-bar"><div class="skill-bar__fill" style="width:76%"></div></div>
@@ -243,25 +240,17 @@
 				<span class="contact-item__icon">✉</span>
 				<div>
 					<p class="contact-item__label">Email</p>
-					<p class="contact-item__value">your@email.com</p>
-				</div>
-			</a>
-			<a class="contact-item" href="https://github.com/" target="_blank" rel="noopener noreferrer">
-				<span class="contact-item__icon">⌥</span>
-				<div>
-					<p class="contact-item__label">GitHub</p>
-					<p class="contact-item__value">github.com/yourname</p>
+					<p class="contact-item__value">jeon.builder@gmail.com</p>
 				</div>
 			</a>
 		</div>
-		<p class="contact-note">
-			4つの戦場を越えてきた力を、あなたのプロジェクトへ。<br>
-			お仕事のご依頼・ご相談はメールにてお気軽にどうぞ。通常 2 営業日以内にご返信いたします。
-		</p>
 	</section>
 
-	<footer class="about-footer">
-		<p>© 2026 JEON RYANGWON</p>
+	<footer class="page-foot">
+		<div class="page-foot__ornament" aria-hidden="true">
+			<span></span><b>⚜</b><span></span>
+		</div>
+		<p class="page-foot__copy">JEON RYANGWON &nbsp;·&nbsp; AI Creative Engineer</p>
 	</footer>
 
 </body>

@@ -218,8 +218,8 @@
   }
 
   function setCanvasImages() {
-    loadFrameSequence(sceneInfo[0].objs.videoImages, './video/harry',   harryFrameNumbers,  'jpg');
-    loadFrameSequence(sceneInfo[2].objs.videoImages, './video/harry02', harry2FrameNumbers, 'jpg');
+    loadFrameSequence(sceneInfo[0].objs.videoImages, './video/harry',   harryFrameNumbers,  'webp')
+    loadFrameSequence(sceneInfo[2].objs.videoImages, './video/harry02', harry2FrameNumbers, 'webp')
 
     for (const path of sceneInfo[BLEND_SCENE].objs.imagesPath) {
       let imgElem;

@@ -17,12 +17,6 @@
 
   const BLEND_WIPE_DURATION = 0.18;
   const BLEND_SCENE = 3;
-  const MOTION_SCENE = 2;
-  const FRAME_LOAD_CONCURRENCY = 8;
-  const HARRY02_PRIORITY_BASE = 10000;
-
-  let pageRevealed = false;
-  let harry02Scheduled = false;
 
   const MOTION_DESC_LETTERS = ['b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k'];
   const MOTION_DESC_TIMING = [
@@ -210,127 +204,22 @@
 
   // ── 画像ロード ──────────────────────────────────────────────────────────────
 
-  const imageLoadQueue = (() => {
-    let active = 0;
-    const pending = [];
-
-    function run() {
-      pending.sort((a, b) => a.priority - b.priority);
-      while (active < FRAME_LOAD_CONCURRENCY && pending.length) {
-        const task = pending.shift();
-        active += 1;
-        task.start(() => {
-          active -= 1;
-          task.done?.();
-          run();
-        });
-      }
-    }
-
-    return {
-      add(priority, start, done) {
-        pending.push({ priority, start, done });
-        run();
-      },
-    };
-  })();
-
-  function scheduleFrameLoad(targetArray, index, directory, frameNum, ext, priority, onLoaded) {
+  function loadFrameSequence(targetArray, directory, frameNumbers, ext = 'jpg') {
     const extStr = ext.startsWith('.') ? ext : `.${ext}`;
-    const img = new Image();
-    img.isLoaded = false;
-    img.isBroken = false;
-    targetArray[index] = img;
-
-    imageLoadQueue.add(priority, (finish) => {
-      const complete = () => {
-        finish();
-        onLoaded?.(img, index);
-      };
-      img.onload = () => {
-        img.isLoaded = true;
-        complete();
-      };
-      img.onerror = () => {
-        img.isBroken = true;
-        complete();
-      };
-      img.src = `${directory}/IMG_${frameNum}${extStr}`;
-    });
-  }
-
-  function drawFirstHarryFrame() {
-    const { context, canvas } = sceneInfo[0].objs;
-    const frame0 = sceneInfo[0].objs.videoImages[0];
-    if (frame0?.isLoaded && !frame0.isBroken) {
-      drawCover(context, frame0, canvas.width, canvas.height);
+    for (const n of frameNumbers) {
+      const img = new Image();
+      img.isLoaded = false;
+      img.isBroken = false;
+      img.onload  = () => { img.isLoaded = true; };
+      img.onerror = () => { img.isBroken = true; };
+      img.src = `${directory}/IMG_${n}${extStr}`;
+      targetArray.push(img);
     }
-  }
-
-  function tryRevealPage() {
-    if (pageRevealed) return;
-
-    if (!ENABLE_PAGE_LOAD) {
-      pageRevealed = true;
-      document.body.classList.remove('body--before-load');
-      return;
-    }
-
-    const frame0 = sceneInfo[0].objs.videoImages[0];
-    if (!frame0?.isLoaded || frame0.isBroken) return;
-
-    pageRevealed = true;
-    setLayout();
-    document.body.classList.remove('body--before-load');
-    drawFirstHarryFrame();
-
-    document.querySelector('.page-load')?.addEventListener('transitionend', (e) => {
-      document.body.removeChild(e.currentTarget);
-    }, { once: true });
-  }
-
-  function scheduleHarry02Loads() {
-    if (harry02Scheduled) return;
-    harry02Scheduled = true;
-
-    harry2FrameNumbers.forEach((frameNum, index) => {
-      scheduleFrameLoad(
-        sceneInfo[MOTION_SCENE].objs.videoImages,
-        index,
-        './video/harry02',
-        frameNum,
-        'jpg',
-        HARRY02_PRIORITY_BASE + index,
-      );
-    });
-  }
-
-  function maybeScheduleHarry02Early() {
-    const motionStart = sceneInfo.slice(0, MOTION_SCENE).reduce((sum, scene) => sum + scene.scrollHeight, 0);
-    if (yOffset >= motionStart - window.innerHeight * 1.5) scheduleHarry02Loads();
   }
 
   function setCanvasImages() {
-    harryFrameNumbers.forEach((frameNum, index) => {
-      scheduleFrameLoad(
-        sceneInfo[0].objs.videoImages,
-        index,
-        './video/harry',
-        frameNum,
-        'jpg',
-        index,
-        (_img, loadedIndex) => {
-          if (loadedIndex === 0) tryRevealPage();
-          if (loadedIndex === 0) scheduleHarry02Loads();
-        },
-      );
-    });
-
-    if ('requestIdleCallback' in window) {
-      requestIdleCallback(() => scheduleHarry02Loads(), { timeout: 2500 });
-    } else {
-      setTimeout(scheduleHarry02Loads, 2000);
-    }
+    loadFrameSequence(sceneInfo[0].objs.videoImages, './video/harry',   harryFrameNumbers,  'jpg');
+    loadFrameSequence(sceneInfo[2].objs.videoImages, './video/harry02', harry2FrameNumbers, 'jpg');
 
     for (const path of sceneInfo[BLEND_SCENE].objs.imagesPath) {
       let imgElem;
@@ -400,9 +289,7 @@
     const coverRatio = Math.max(window.innerWidth / 1920, window.innerHeight / 1080);
     const coverTransform = `translate3d(-50%, -50%, 0) scale(${coverRatio})`;
     sceneInfo[0].objs.canvas.style.transform = coverTransform;
-    sceneInfo[MOTION_SCENE].objs.canvas.style.transform = coverTransform;
-
-    maybeScheduleHarry02Early();
+    sceneInfo[2].objs.canvas.style.transform = coverTransform;
   }
 
   // Scene 2 の末尾でブレンドキャンバスをプレビュー描画する
@@ -625,9 +512,24 @@
 
   // ── 初期化 ─────────────────────────────────────────────────────────────────
 
-  function initApp() {
+  window.addEventListener('load', () => {
+    setLayout();
+    if (ENABLE_PAGE_LOAD) document.body.classList.remove('body--before-load');
     setLayout();
 
+    // 最初のフレームを即描画
+    const firstFrame = sceneInfo[0].objs.videoImages[0];
+    if (firstFrame) {
+      const drawFirst = () => {
+        if (firstFrame.isLoaded && !firstFrame.isBroken) {
+          const { context, canvas } = sceneInfo[0].objs;
+          drawCover(context, firstFrame, canvas.width, canvas.height);
+        }
+      };
+      firstFrame.isLoaded ? drawFirst() : firstFrame.addEventListener('load', drawFirst, { once: true });
+    }
+
+    // ページ中間でリロードされた場合に正しい位置に再スクロール
     if (yOffset > 0) {
       let tempY = yOffset;
       let count = 0;
@@ -640,7 +542,6 @@
 
     window.addEventListener('scroll', () => {
       yOffset = window.pageYOffset;
-      maybeScheduleHarry02Early();
       releaseBlendIfEnd();
       scrollLoop();
       if (!rafState) { rafId = requestAnimationFrame(loop); rafState = true; }
@@ -655,18 +556,11 @@
       setTimeout(() => window.location.reload(), 500);
     });
 
-    if (!rafState) {
-      rafId = requestAnimationFrame(loop);
-      rafState = true;
+    if (ENABLE_PAGE_LOAD) {
+      document.querySelector('.page-load')?.addEventListener('transitionend', e => {
+        document.body.removeChild(e.currentTarget);
+      });
     }
-  }
-
-  document.addEventListener('DOMContentLoaded', initApp);
-
-  window.addEventListener('load', () => {
-    setLayout();
-    tryRevealPage();
-    drawFirstHarryFrame();
   });
 
   setCanvasImages();

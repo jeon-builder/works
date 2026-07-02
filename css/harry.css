@@ -316,7 +316,7 @@ p {
 
 .section-fv__title {
 	position: relative;
-	top: -10vh;
+	top: -7vh;
 	z-index: 5;
 	font-family: var(--font-cinzel);
 	font-size: clamp(2.5rem, 5vw, 4rem);

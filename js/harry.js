@@ -18,19 +18,11 @@
   const BLEND_WIPE_DURATION = 0.18;
   const BLEND_SCENE = 3;
   const MOTION_SCENE = 2;
-  const HARRY02_DIR = './video/harry02';
-  const HARRY02_PREFETCH_RADIUS = 8;
-  const HARRY02_MAX_CONCURRENT = 6;
+  const FRAME_LOAD_CONCURRENCY = 8;
+  const HARRY02_PRIORITY_BASE = 10000;
 
-  const harry02LoadState = {
-    started: false,
-    observer: null,
-  };
-
-  const harry02LoadQueue = {
-    active: 0,
-    pending: new Set(),
-  };
+  let pageRevealed = false;
+  let harry02Scheduled = false;
 
   const MOTION_DESC_LETTERS = ['b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k'];
   const MOTION_DESC_TIMING = [
@@ -218,122 +210,127 @@
 
   // ── 画像ロード ──────────────────────────────────────────────────────────────
 
-  function loadFrameSequence(targetArray, directory, frameNumbers, ext = 'jpg') {
+  const imageLoadQueue = (() => {
+    let active = 0;
+    const pending = [];
+
+    function run() {
+      pending.sort((a, b) => a.priority - b.priority);
+      while (active < FRAME_LOAD_CONCURRENCY && pending.length) {
+        const task = pending.shift();
+        active += 1;
+        task.start(() => {
+          active -= 1;
+          task.done?.();
+          run();
+        });
+      }
+    }
+
+    return {
+      add(priority, start, done) {
+        pending.push({ priority, start, done });
+        run();
+      },
+    };
+  })();
+
+  function scheduleFrameLoad(targetArray, index, directory, frameNum, ext, priority, onLoaded) {
     const extStr = ext.startsWith('.') ? ext : `.${ext}`;
-    for (const n of frameNumbers) {
-      const img = new Image();
-      img.isLoaded = false;
-      img.isBroken = false;
-      img.onload  = () => { img.isLoaded = true; };
-      img.onerror = () => { img.isBroken = true; };
-      img.src = `${directory}/IMG_${n}${extStr}`;
-      targetArray.push(img);
-    }
-  }
+    const img = new Image();
+    img.isLoaded = false;
+    img.isBroken = false;
+    targetArray[index] = img;
 
-  function initHarry02LazySlots() {
-    for (const frameNum of harry2FrameNumbers) {
-      sceneInfo[MOTION_SCENE].objs.videoImages.push({
-        frameNum,
-        img: null,
-        isLoaded: false,
-        isBroken: false,
-        loading: false,
-      });
-    }
-  }
-
-  function pumpHarry02LoadQueue() {
-    while (harry02LoadQueue.active < HARRY02_MAX_CONCURRENT && harry02LoadQueue.pending.size) {
-      const slot = harry02LoadQueue.pending.values().next().value;
-      harry02LoadQueue.pending.delete(slot);
-      if (slot.img || slot.loading || slot.isBroken) continue;
-
-      slot.loading = true;
-      harry02LoadQueue.active += 1;
-
-      const img = new Image();
-      const finish = () => {
-        slot.loading = false;
-        harry02LoadQueue.active -= 1;
-        pumpHarry02LoadQueue();
-      };
-
-      img.onload = () => {
-        slot.isLoaded = true;
-        slot.img = img;
+    imageLoadQueue.add(priority, (finish) => {
+      const complete = () => {
         finish();
+        onLoaded?.(img, index);
+      };
+      img.onload = () => {
+        img.isLoaded = true;
+        complete();
       };
       img.onerror = () => {
-        slot.isBroken = true;
-        finish();
+        img.isBroken = true;
+        complete();
       };
-      img.src = `${HARRY02_DIR}/IMG_${slot.frameNum}.jpg`;
+      img.src = `${directory}/IMG_${frameNum}${extStr}`;
+    });
+  }
+
+  function drawFirstHarryFrame() {
+    const { context, canvas } = sceneInfo[0].objs;
+    const frame0 = sceneInfo[0].objs.videoImages[0];
+    if (frame0?.isLoaded && !frame0.isBroken) {
+      drawCover(context, frame0, canvas.width, canvas.height);
     }
   }
 
-  function queueHarry02Frame(slot) {
-    if (!slot || slot.img || slot.loading || slot.isBroken) return;
-    harry02LoadQueue.pending.add(slot);
-    pumpHarry02LoadQueue();
-  }
+  function tryRevealPage() {
+    if (pageRevealed) return;
 
-  function ensureHarry02Frames(index) {
-    if (!harry02LoadState.started) return null;
-
-    const frames = sceneInfo[MOTION_SCENE].objs.videoImages;
-    queueHarry02Frame(frames[index]);
-    for (let offset = 1; offset <= HARRY02_PREFETCH_RADIUS; offset += 1) {
-      if (index - offset >= 0) queueHarry02Frame(frames[index - offset]);
-      if (index + offset < frames.length) queueHarry02Frame(frames[index + offset]);
-    }
-
-    return frames[index];
-  }
-
-  function startHarry02Load() {
-    if (harry02LoadState.started) return;
-    harry02LoadState.started = true;
-    harry02LoadState.observer?.disconnect();
-    ensureHarry02Frames(0);
-  }
-
-  function maybeStartHarry02Early() {
-    const motionStart = sceneInfo.slice(0, MOTION_SCENE).reduce((sum, scene) => sum + scene.scrollHeight, 0);
-    if (yOffset >= motionStart - window.innerHeight) startHarry02Load();
-  }
-
-  function watchHarry02Prefetch() {
-    const motionSection = document.querySelector('#section-motion');
-    if (!motionSection) return;
-
-    if (!('IntersectionObserver' in window)) {
-      window.addEventListener('scroll', startHarry02Load, { once: true, passive: true });
+    if (!ENABLE_PAGE_LOAD) {
+      pageRevealed = true;
+      document.body.classList.remove('body--before-load');
       return;
     }
 
-    harry02LoadState.observer = new IntersectionObserver((entries) => {
-      if (entries.some(entry => entry.isIntersecting)) startHarry02Load();
-    }, { rootMargin: '100% 0px 0px 0px' });
+    const frame0 = sceneInfo[0].objs.videoImages[0];
+    if (!frame0?.isLoaded || frame0.isBroken) return;
 
-    harry02LoadState.observer.observe(motionSection);
+    pageRevealed = true;
+    setLayout();
+    document.body.classList.remove('body--before-load');
+    drawFirstHarryFrame();
+
+    document.querySelector('.page-load')?.addEventListener('transitionend', (e) => {
+      document.body.removeChild(e.currentTarget);
+    }, { once: true });
   }
 
-  function getDrawableFrame(sceneIndex, sequence) {
-    const frame = sceneInfo[sceneIndex].objs.videoImages[sequence];
-    if (!frame) return null;
+  function scheduleHarry02Loads() {
+    if (harry02Scheduled) return;
+    harry02Scheduled = true;
 
-    if (sceneIndex === MOTION_SCENE) {
-      ensureHarry02Frames(sequence);
-      return frame.isLoaded && !frame.isBroken ? frame.img : null;
-    }
+    harry2FrameNumbers.forEach((frameNum, index) => {
+      scheduleFrameLoad(
+        sceneInfo[MOTION_SCENE].objs.videoImages,
+        index,
+        './video/harry02',
+        frameNum,
+        'jpg',
+        HARRY02_PRIORITY_BASE + index,
+      );
+    });
+  }
 
-    return frame.isLoaded && !frame.isBroken ? frame : null;
+  function maybeScheduleHarry02Early() {
+    const motionStart = sceneInfo.slice(0, MOTION_SCENE).reduce((sum, scene) => sum + scene.scrollHeight, 0);
+    if (yOffset >= motionStart - window.innerHeight * 1.5) scheduleHarry02Loads();
   }
 
   function setCanvasImages() {
-    loadFrameSequence(sceneInfo[0].objs.videoImages, './video/harry', harryFrameNumbers, 'jpg');
-    initHarry02LazySlots();
+    harryFrameNumbers.forEach((frameNum, index) => {
+      scheduleFrameLoad(
+        sceneInfo[0].objs.videoImages,
+        index,
+        './video/harry',
+        frameNum,
+        'jpg',
+        index,
+        (_img, loadedIndex) => {
+          if (loadedIndex === 0) tryRevealPage();
+          if (loadedIndex === 0) scheduleHarry02Loads();
+        },
+      );
+    });
+
+    if ('requestIdleCallback' in window) {
+      requestIdleCallback(() => scheduleHarry02Loads(), { timeout: 2500 });
+    } else {
+      setTimeout(scheduleHarry02Loads, 2000);
+    }
 
     for (const path of sceneInfo[BLEND_SCENE].objs.imagesPath) {
       let imgElem;
@@ -405,7 +402,7 @@
     sceneInfo[0].objs.canvas.style.transform = coverTransform;
     sceneInfo[MOTION_SCENE].objs.canvas.style.transform = coverTransform;
 
-    maybeStartHarry02Early();
+    maybeScheduleHarry02Early();
   }
 
   // Scene 2 の末尾でブレンドキャンバスをプレビュー描画する
@@ -461,7 +458,7 @@
         }
         break;
 
-      case MOTION_SCENE:
+      case 2:
         objs.canvas.style.opacity = calcValues(
           scrollRatio <= 0.5 ? values.canvas_opacity_in : values.canvas_opacity_out,
           currentYOffset,
@@ -584,7 +581,6 @@
       if (currentScene === BLEND_SCENE) resetBlendScene();
       if (currentScene < sceneInfo.length - 1) currentScene++;
       document.body.dataset.scene = String(currentScene);
-      if (currentScene === MOTION_SCENE) startHarry02Load();
     }
 
     if (delayedYOffset < prevScrollHeight) {
@@ -601,12 +597,12 @@
     delayedYOffset += (yOffset - delayedYOffset) * acc;
 
     // フレーム画像の描画
-    if (!enterNewScene && (currentScene === 0 || currentScene === MOTION_SCENE)) {
+    if (!enterNewScene && (currentScene === 0 || currentScene === 2)) {
       const currentYOffset = delayedYOffset - prevScrollHeight;
       const { objs, values } = sceneInfo[currentScene];
       const sequence = Math.round(calcValues(values.imageSequence, currentYOffset));
-      const frame = getDrawableFrame(currentScene, sequence);
-      if (frame) drawCover(objs.context, frame, objs.canvas.width, objs.canvas.height);
+      const frame = objs.videoImages[sequence];
+      if (frame?.isLoaded && !frame.isBroken) drawCover(objs.context, frame, objs.canvas.width, objs.canvas.height);
     }
 
     // ページ先頭付近
@@ -629,25 +625,9 @@
 
   // ── 初期化 ─────────────────────────────────────────────────────────────────
 
-  window.addEventListener('load', () => {
-    setLayout();
-    watchHarry02Prefetch();
-    if (ENABLE_PAGE_LOAD) document.body.classList.remove('body--before-load');
+  function initApp() {
     setLayout();
 
-    // 最初のフレームを即描画
-    const firstFrame = sceneInfo[0].objs.videoImages[0];
-    if (firstFrame) {
-      const drawFirst = () => {
-        if (firstFrame.isLoaded && !firstFrame.isBroken) {
-          const { context, canvas } = sceneInfo[0].objs;
-          drawCover(context, firstFrame, canvas.width, canvas.height);
-        }
-      };
-      firstFrame.isLoaded ? drawFirst() : firstFrame.addEventListener('load', drawFirst, { once: true });
-    }
-
-    // ページ中間でリロードされた場合に正しい位置に再スクロール
     if (yOffset > 0) {
       let tempY = yOffset;
       let count = 0;
@@ -660,7 +640,7 @@
 
     window.addEventListener('scroll', () => {
       yOffset = window.pageYOffset;
-      maybeStartHarry02Early();
+      maybeScheduleHarry02Early();
       releaseBlendIfEnd();
       scrollLoop();
       if (!rafState) { rafId = requestAnimationFrame(loop); rafState = true; }
@@ -675,11 +655,18 @@
       setTimeout(() => window.location.reload(), 500);
     });
 
-    if (ENABLE_PAGE_LOAD) {
-      document.querySelector('.page-load')?.addEventListener('transitionend', e => {
-        document.body.removeChild(e.currentTarget);
-      });
+    if (!rafState) {
+      rafId = requestAnimationFrame(loop);
+      rafState = true;
     }
+  }
+
+  document.addEventListener('DOMContentLoaded', initApp);
+
+  window.addEventListener('load', () => {
+    setLayout();
+    tryRevealPage();
+    drawFirstHarryFrame();
   });
 
   setCanvasImages();

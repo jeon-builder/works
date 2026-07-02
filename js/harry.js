@@ -17,6 +17,20 @@
 
   const BLEND_WIPE_DURATION = 0.18;
   const BLEND_SCENE = 3;
+  const MOTION_SCENE = 2;
+  const HARRY02_DIR = './video/harry02';
+  const HARRY02_PREFETCH_RADIUS = 8;
+  const HARRY02_MAX_CONCURRENT = 6;
+
+  const harry02LoadState = {
+    started: false,
+    observer: null,
+  };
+
+  const harry02LoadQueue = {
+    active: 0,
+    pending: new Set(),
+  };
 
   const MOTION_DESC_LETTERS = ['b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k'];
   const MOTION_DESC_TIMING = [
@@ -217,9 +231,109 @@
     }
   }
 
+  function initHarry02LazySlots() {
+    for (const frameNum of harry2FrameNumbers) {
+      sceneInfo[MOTION_SCENE].objs.videoImages.push({
+        frameNum,
+        img: null,
+        isLoaded: false,
+        isBroken: false,
+        loading: false,
+      });
+    }
+  }
+
+  function pumpHarry02LoadQueue() {
+    while (harry02LoadQueue.active < HARRY02_MAX_CONCURRENT && harry02LoadQueue.pending.size) {
+      const slot = harry02LoadQueue.pending.values().next().value;
+      harry02LoadQueue.pending.delete(slot);
+      if (slot.img || slot.loading || slot.isBroken) continue;
+
+      slot.loading = true;
+      harry02LoadQueue.active += 1;
+
+      const img = new Image();
+      const finish = () => {
+        slot.loading = false;
+        harry02LoadQueue.active -= 1;
+        pumpHarry02LoadQueue();
+      };
+
+      img.onload = () => {
+        slot.isLoaded = true;
+        slot.img = img;
+        finish();
+      };
+      img.onerror = () => {
+        slot.isBroken = true;
+        finish();
+      };
+      img.src = `${HARRY02_DIR}/IMG_${slot.frameNum}.jpg`;
+    }
+  }
+
+  function queueHarry02Frame(slot) {
+    if (!slot || slot.img || slot.loading || slot.isBroken) return;
+    harry02LoadQueue.pending.add(slot);
+    pumpHarry02LoadQueue();
+  }
+
+  function ensureHarry02Frames(index) {
+    if (!harry02LoadState.started) return null;
+
+    const frames = sceneInfo[MOTION_SCENE].objs.videoImages;
+    queueHarry02Frame(frames[index]);
+    for (let offset = 1; offset <= HARRY02_PREFETCH_RADIUS; offset += 1) {
+      if (index - offset >= 0) queueHarry02Frame(frames[index - offset]);
+      if (index + offset < frames.length) queueHarry02Frame(frames[index + offset]);
+    }
+
+    return frames[index];
+  }
+
+  function startHarry02Load() {
+    if (harry02LoadState.started) return;
+    harry02LoadState.started = true;
+    harry02LoadState.observer?.disconnect();
+    ensureHarry02Frames(0);
+  }
+
+  function maybeStartHarry02Early() {
+    const motionStart = sceneInfo.slice(0, MOTION_SCENE).reduce((sum, scene) => sum + scene.scrollHeight, 0);
+    if (yOffset >= motionStart - window.innerHeight) startHarry02Load();
+  }
+
+  function watchHarry02Prefetch() {
+    const motionSection = document.querySelector('#section-motion');
+    if (!motionSection) return;
+
+    if (!('IntersectionObserver' in window)) {
+      window.addEventListener('scroll', startHarry02Load, { once: true, passive: true });
+      return;
+    }
+
+    harry02LoadState.observer = new IntersectionObserver((entries) => {
+      if (entries.some(entry => entry.isIntersecting)) startHarry02Load();
+    }, { rootMargin: '100% 0px 0px 0px' });
+
+    harry02LoadState.observer.observe(motionSection);
+  }
+
+  function getDrawableFrame(sceneIndex, sequence) {
+    const frame = sceneInfo[sceneIndex].objs.videoImages[sequence];
+    if (!frame) return null;
+
+    if (sceneIndex === MOTION_SCENE) {
+      ensureHarry02Frames(sequence);
+      return frame.isLoaded && !frame.isBroken ? frame.img : null;
+    }
+
+    return frame.isLoaded && !frame.isBroken ? frame : null;
+  }
+
   function setCanvasImages() {
-    loadFrameSequence(sceneInfo[0].objs.videoImages, './video/harry',   harryFrameNumbers,  'jpg');
-    loadFrameSequence(sceneInfo[2].objs.videoImages, './video/harry02', harry2FrameNumbers, 'jpg');
+    loadFrameSequence(sceneInfo[0].objs.videoImages, './video/harry', harryFrameNumbers, 'jpg');
+    initHarry02LazySlots();
 
     for (const path of sceneInfo[BLEND_SCENE].objs.imagesPath) {
       let imgElem;
@@ -289,7 +403,9 @@
     const coverRatio = Math.max(window.innerWidth / 1920, window.innerHeight / 1080);
     const coverTransform = `translate3d(-50%, -50%, 0) scale(${coverRatio})`;
     sceneInfo[0].objs.canvas.style.transform = coverTransform;
-    sceneInfo[2].objs.canvas.style.transform = coverTransform;
+    sceneInfo[MOTION_SCENE].objs.canvas.style.transform = coverTransform;
+
+    maybeStartHarry02Early();
   }
 
   // Scene 2 の末尾でブレンドキャンバスをプレビュー描画する
@@ -345,7 +461,7 @@
         }
         break;
 
-      case 2:
+      case MOTION_SCENE:
         objs.canvas.style.opacity = calcValues(
           scrollRatio <= 0.5 ? values.canvas_opacity_in : values.canvas_opacity_out,
           currentYOffset,
@@ -468,6 +584,7 @@
       if (currentScene === BLEND_SCENE) resetBlendScene();
       if (currentScene < sceneInfo.length - 1) currentScene++;
       document.body.dataset.scene = String(currentScene);
+      if (currentScene === MOTION_SCENE) startHarry02Load();
     }
 
     if (delayedYOffset < prevScrollHeight) {
@@ -484,12 +601,12 @@
     delayedYOffset += (yOffset - delayedYOffset) * acc;
 
     // フレーム画像の描画
-    if (!enterNewScene && (currentScene === 0 || currentScene === 2)) {
+    if (!enterNewScene && (currentScene === 0 || currentScene === MOTION_SCENE)) {
       const currentYOffset = delayedYOffset - prevScrollHeight;
       const { objs, values } = sceneInfo[currentScene];
       const sequence = Math.round(calcValues(values.imageSequence, currentYOffset));
-      const frame = objs.videoImages[sequence];
-      if (frame?.isLoaded && !frame.isBroken) drawCover(objs.context, frame, objs.canvas.width, objs.canvas.height);
+      const frame = getDrawableFrame(currentScene, sequence);
+      if (frame) drawCover(objs.context, frame, objs.canvas.width, objs.canvas.height);
     }
 
     // ページ先頭付近
@@ -514,6 +631,7 @@
 
   window.addEventListener('load', () => {
     setLayout();
+    watchHarry02Prefetch();
     if (ENABLE_PAGE_LOAD) document.body.classList.remove('body--before-load');
     setLayout();
 
@@ -542,6 +660,7 @@
 
     window.addEventListener('scroll', () => {
       yOffset = window.pageYOffset;
+      maybeStartHarry02Early();
       releaseBlendIfEnd();
       scrollLoop();
       if (!rafState) { rafId = requestAnimationFrame(loop); rafState = true; }

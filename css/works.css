@@ -612,7 +612,7 @@ body {
 	font-weight: 500;
 }
 .point-item__issues li {
-	font-size: 1.28rem;
+	font-size: 1.4rem;
 	color: var(--color-muted);
 	line-height: 1.8;
 	padding-left: 1.2em;
@@ -1098,7 +1098,7 @@ body {
 }
 .corp-case__num {
 	font-family: 'Cinzel', serif;
-	font-size: 0.96rem;
+	font-size: 1.4rem;
 	color: var(--color-accent);
 	opacity: 0.55;
 	letter-spacing: 0.12em;
@@ -1367,7 +1367,7 @@ body {
 }
 .corp-system__grid {
 	display: grid;
-	grid-template-columns: repeat(3, 1fr);
+	grid-template-columns: repeat(2, 1fr);
 	gap: 28px;
 }
 .corp-system__item {

@@ -15,6 +15,41 @@
   const harryFrameNumbers  = Array.from({ length: 350 }, (_, i) => i + 1).filter(n => n !== 233);
   const harry2FrameNumbers = Array.from({ length: 622 }, (_, i) => i + 1);
 
+  const BLEND_WIPE_DURATION = 0.18;
+  const BLEND_SCENE = 3;
+
+  const MOTION_DESC_LETTERS = ['b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k'];
+  const MOTION_DESC_TIMING = [
+    [0.200, 0.225], [0.260, 0.285], [0.320, 0.345], [0.380, 0.405], [0.440, 0.465],
+    [0.500, 0.525], [0.560, 0.585], [0.620, 0.645], [0.680, 0.705], [0.740, 0.765],
+  ];
+
+  function createBlendValues() {
+    return {
+      rect1X:       [0, 0, { start: 0, end: 0 }],
+      rect2X:       [0, 0, { start: 0, end: 0 }],
+      blendHeight:  [0, 0, { start: 0, end: 0 }],
+      canvas_scale: [0, 0, { start: 0, end: 0 }],
+      rectStartY: 0,
+      wipeTimingSet: false,
+      blendShrinkScale: 0,
+      blendShrinkScaleSet: false,
+      hallQuoteLatch: false,
+    };
+  }
+
+  function createMotionDescs() {
+    return MOTION_DESC_LETTERS.map((letter, i) => {
+      const selector = `#section-motion .section-motion__desc--${letter}`;
+      return {
+        inStart: MOTION_DESC_TIMING[i][0],
+        inEnd:   MOTION_DESC_TIMING[i][1],
+        el:  document.querySelector(selector),
+        pin: document.querySelector(`${selector} .section-motion__pin`),
+      };
+    });
+  }
+
   // ── シーン定義 ─────────────────────────────────────────────────────────────
   const sceneInfo = [
     {
@@ -68,18 +103,7 @@
           outRange: [0.16, 0.20],
         },
         // 説明テキスト B〜K（フェードインのみ、アウトなし）
-        descs: [
-          { inStart: 0.200, inEnd: 0.225, el: document.querySelector('#section-motion .section-motion__desc--b'), pin: document.querySelector('#section-motion .section-motion__desc--b .section-motion__pin') },
-          { inStart: 0.260, inEnd: 0.285, el: document.querySelector('#section-motion .section-motion__desc--c'), pin: document.querySelector('#section-motion .section-motion__desc--c .section-motion__pin') },
-          { inStart: 0.320, inEnd: 0.345, el: document.querySelector('#section-motion .section-motion__desc--d'), pin: document.querySelector('#section-motion .section-motion__desc--d .section-motion__pin') },
-          { inStart: 0.380, inEnd: 0.405, el: document.querySelector('#section-motion .section-motion__desc--e'), pin: document.querySelector('#section-motion .section-motion__desc--e .section-motion__pin') },
-          { inStart: 0.440, inEnd: 0.465, el: document.querySelector('#section-motion .section-motion__desc--f'), pin: document.querySelector('#section-motion .section-motion__desc--f .section-motion__pin') },
-          { inStart: 0.500, inEnd: 0.525, el: document.querySelector('#section-motion .section-motion__desc--g'), pin: document.querySelector('#section-motion .section-motion__desc--g .section-motion__pin') },
-          { inStart: 0.560, inEnd: 0.585, el: document.querySelector('#section-motion .section-motion__desc--h'), pin: document.querySelector('#section-motion .section-motion__desc--h .section-motion__pin') },
-          { inStart: 0.620, inEnd: 0.645, el: document.querySelector('#section-motion .section-motion__desc--i'), pin: document.querySelector('#section-motion .section-motion__desc--i .section-motion__pin') },
-          { inStart: 0.680, inEnd: 0.705, el: document.querySelector('#section-motion .section-motion__desc--j'), pin: document.querySelector('#section-motion .section-motion__desc--j .section-motion__pin') },
-          { inStart: 0.740, inEnd: 0.765, el: document.querySelector('#section-motion .section-motion__desc--k'), pin: document.querySelector('#section-motion .section-motion__desc--k .section-motion__pin') },
-        ],
+        descs: createMotionDescs(),
       },
       values: {
         imageSequence:     [0, harry2FrameNumbers.length - 1],
@@ -93,32 +117,17 @@
       heightNum: 3,
       scrollHeight: 0,
       objs: {
-        container:     document.querySelector('#section-blend'),
-        canvasWrap:    document.querySelector('#section-blend-canvas-wrap'),
-        hallQuote:     document.querySelector('.section-blend__hall-quote'),
-        canvasCaption: document.querySelector('#section-blend .canvas-caption'),
-        canvas:        document.querySelector('#section-blend-canvas'),
-        context:       document.querySelector('#section-blend-canvas').getContext('2d'),
+        container:  document.querySelector('#section-blend'),
+        canvasWrap: document.querySelector('#section-blend-canvas-wrap'),
+        hallQuote:  document.querySelector('.section-blend__hall-quote'),
+        canvas:     document.querySelector('#section-blend-canvas'),
+        context:    document.querySelector('#section-blend-canvas').getContext('2d'),
         imagesPath: ['./images/4house-img02.png', './images/4house-img.png'],
         images: [],
       },
-      values: {
-        rect1X:                  [0, 0, { start: 0, end: 0 }],
-        rect2X:                  [0, 0, { start: 0, end: 0 }],
-        blendHeight:             [0, 0, { start: 0, end: 0 }],
-        canvas_scale:            [0, 0, { start: 0, end: 0 }],
-        canvasCaption_opacity:   [0, 1, { start: 0, end: 0 }],
-        canvasCaption_translateY:[20, 0, { start: 0, end: 0 }],
-        rectStartY: 0,
-        wipeTimingSet: false,
-        blendShrinkScale: 0,
-        blendShrinkScaleSet: false,
-        hallQuoteLatch: false,
-      },
+      values: createBlendValues(),
     },
   ];
-
-  const BLEND_WIPE_DURATION = 0.18;
 
   // ── ユーティリティ ──────────────────────────────────────────────────────────
 
@@ -212,7 +221,7 @@
     loadFrameSequence(sceneInfo[0].objs.videoImages, './video/harry',   harryFrameNumbers,  'jpg');
     loadFrameSequence(sceneInfo[2].objs.videoImages, './video/harry02', harry2FrameNumbers, 'jpg');
 
-    for (const path of sceneInfo[3].objs.imagesPath) {
+    for (const path of sceneInfo[BLEND_SCENE].objs.imagesPath) {
       let imgElem;
       if (/\.(mov|mp4|webm)$/i.test(path)) {
         imgElem = document.createElement('video');
@@ -231,7 +240,7 @@
         imgElem.src = path;
         if (imgElem.complete && imgElem.naturalWidth > 0) imgElem.isLoaded = true;
       }
-      sceneInfo[3].objs.images.push(imgElem);
+      sceneInfo[BLEND_SCENE].objs.images.push(imgElem);
     }
   }
 
@@ -239,7 +248,7 @@
 
 
   function resetBlendScene() {
-    const { objs, values } = sceneInfo[3];
+    const { objs, values } = sceneInfo[BLEND_SCENE];
     objs.canvasWrap.classList.remove('sticky');
     objs.canvasWrap.style.transform = '';
     objs.canvas.style.cssText = '';
@@ -273,16 +282,7 @@
     document.body.dataset.scene = String(currentScene);
 
     // ブレンドシーンの値をリセット
-    Object.assign(sceneInfo[3].values, {
-      rectStartY: 0, wipeTimingSet: false,
-      blendShrinkScale: 0, blendShrinkScaleSet: false, hallQuoteLatch: false,
-      rect1X:                  [0, 0, { start: 0, end: 0 }],
-      rect2X:                  [0, 0, { start: 0, end: 0 }],
-      blendHeight:             [0, 0, { start: 0, end: 0 }],
-      canvas_scale:            [0, 0, { start: 0, end: 0 }],
-      canvasCaption_opacity:   [0, 1, { start: 0, end: 0 }],
-      canvasCaption_translateY:[20, 0, { start: 0, end: 0 }],
-    });
+    Object.assign(sceneInfo[BLEND_SCENE].values, createBlendValues());
     resetBlendScene();
 
     // Scene 0 / 2 のキャンバスをビューポートに合わせてスケール
@@ -294,7 +294,7 @@
 
   // Scene 2 の末尾でブレンドキャンバスをプレビュー描画する
   function drawBlendPreview() {
-    const { objs, values } = sceneInfo[3];
+    const { objs, values } = sceneInfo[BLEND_SCENE];
     objs.canvas.style.transform = '';
     objs.context.fillStyle = '#111';
     objs.context.fillRect(0, 0, objs.canvas.width, objs.canvas.height);
@@ -335,7 +335,7 @@
     const scrollHeight  = sceneInfo[currentScene].scrollHeight;
     const scrollRatio   = currentYOffset / scrollHeight;
 
-    if (currentScene !== 3) sceneInfo[3].objs.hallQuote?.classList.remove('section-blend__hall-quote--visible');
+    if (currentScene !== BLEND_SCENE) sceneInfo[BLEND_SCENE].objs.hallQuote?.classList.remove('section-blend__hall-quote--visible');
 
     switch (currentScene) {
       case 0:
@@ -357,8 +357,8 @@
         if (scrollRatio > 0.94) drawBlendPreview();
         break;
 
-      case 3: {
-        const { context, canvas, images, canvasWrap, hallQuote, canvasCaption } = objs;
+      case BLEND_SCENE: {
+        const { context, canvas, images, canvasWrap, hallQuote } = objs;
 
         // ベース画像を描画
         canvas.style.transform = '';
@@ -445,16 +445,6 @@
             canvasWrap.classList.add('sticky');
             canvasWrap.style.transform = '';
           }
-
-          const passedScale = shrinkComplete || currentYOffset >= scrollHeight - 1;
-          if (passedScale && canvasCaption) {
-            values.canvasCaption_opacity[2]    = { start: scaleEnd, end: scaleEnd + 0.1 };
-            values.canvasCaption_translateY[2] = { start: scaleEnd, end: scaleEnd + 0.1 };
-            canvasCaption.style.opacity   = calcValues(values.canvasCaption_opacity,    currentYOffset);
-            canvasCaption.style.transform = `translate3d(0, ${calcValues(values.canvasCaption_translateY, currentYOffset)}%, 0)`;
-          } else if (canvasCaption) {
-            canvasCaption.style.opacity = values.canvasCaption_opacity[0];
-          }
         }
         break;
       }
@@ -475,7 +465,7 @@
     if (delayedYOffset > sceneEnd) {
       enterNewScene = true;
       if (currentScene === sceneInfo.length - 1) document.body.classList.add('body--scroll-ended');
-      if (currentScene === 3) resetBlendScene();
+      if (currentScene === BLEND_SCENE) resetBlendScene();
       if (currentScene < sceneInfo.length - 1) currentScene++;
       document.body.dataset.scene = String(currentScene);
     }

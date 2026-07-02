@@ -8,11 +8,8 @@
 	--font-sans-jp: 'Noto Sans JP', 'Hiragino Sans', 'Hiragino Kaku Gothic ProN',
 		'Yu Gothic', YuGothic, 'Meiryo', 'MS PGothic', sans-serif;
 	--gold:      #c9a96e;
-	--gold-dim:  rgba(201, 169, 110, 0.4);
 	--gold-glow: rgba(201, 169, 110, 0.18);
-	--curse:     #9bdd80b3;
-	--curse-glow: rgba(128, 167, 112, 0.5);
-	--curse-aura: rgba(72, 58, 92, 0.22);
+	--curse:     #63994db3;
 	--magic:     #e8dcc0;
 	--magic-glow: rgba(201, 169, 110, 0.6);
 	--magic-aura: rgba(168, 216, 245, 0.38);
@@ -50,8 +47,7 @@ p {
 		padding: 0 2%;
 	}
 
-	.section-lead__txt.common-inner,
-	.section-detail__txt.common-inner {
+	.section-lead__txt.common-inner {
 		padding: 1.25rem 2%;
 	}
 }
@@ -61,8 +57,7 @@ p {
 		padding: 0 4%;
 	}
 
-	.section-lead__txt.common-inner,
-	.section-detail__txt.common-inner {
+	.section-lead__txt.common-inner {
 		padding: 1.25rem 4%;
 	}
 }
@@ -514,21 +509,18 @@ p {
 }
 
 .section-detail__crest-label-sub {
-    order: 3;
-    flex-basis: 100%;
-    display: block;
-    font-family: var(--font-noto);
-    font-size: clamp(0.8rem, 1.2vw, 1.1rem);
-    font-weight: 400;
-    letter-spacing: 0.04em;
-    /* color: rgba(201, 169, 110, 0.6); */
-    text-align: center;
-    white-space: nowrap;
-    margin-top: 2px;
-    line-height: 1.5;
-    font-size: 1.4rem;
-    font-family: 'Noto Sans JP';
-    color: var(--cream);
+	order: 3;
+	flex-basis: 100%;
+	display: block;
+	font-family: var(--font-sans-jp);
+	font-size: 1.4rem;
+	font-weight: 400;
+	letter-spacing: 0.04em;
+	color: var(--cream);
+	text-align: center;
+	white-space: nowrap;
+	margin-top: 2px;
+	line-height: 1.5;
 }
 
 .section-detail__crest-label-arrow {
@@ -545,8 +537,7 @@ p {
 	transform: translateX(5px) scale(1.2);
 }
 
-.section-lead__txt,
-.section-detail__txt {
+.section-lead__txt {
 	position: absolute;
 	inset: 0;
 	z-index: 2;
@@ -560,15 +551,11 @@ p {
 	margin: 0;
 	padding: 1.25rem 1.5rem;
 	font-size: 1.2rem;
-	line-height: 1.7;
 	text-align: center;
 	color: #f0f0f0;
 	text-shadow:
 		0 0 1px rgba(0, 0, 0, 0.9),
 		0 2px 20px rgba(0, 0, 0, 0.9);
-}
-
-.section-lead__txt {
 	font-family: var(--font-serif-jp);
 	font-weight: 500;
 	letter-spacing: 0.06em;
@@ -585,12 +572,7 @@ p {
 	display: contents;
 }
 
-.section-detail__txt {
-	z-index: 3;
-}
-
-.section-lead__txt.common-inner,
-.section-detail__txt.common-inner {
+.section-lead__txt.common-inner {
 	top: 0;
 	right: auto;
 	bottom: 0;
@@ -603,26 +585,16 @@ p {
 	color: rgba(237, 228, 210, 0.82);
 }
 
-.section-lead__ttl,
-.section-detail__ttl {
+.section-lead__ttl {
 	display: block;
 	margin: 0 0 0.5em;
 	font-size: clamp(2rem, 4vw, 3rem);
 	line-height: 1.2;
 	letter-spacing: 0.06em;
-}
-
-.section-lead__ttl {
 	font-family: var(--font-serif-jp);
 	font-weight: 600;
 	letter-spacing: 0.1em;
 	color: var(--curse);
-}
-
-.section-detail__ttl {
-	font-family: var(--font-cinzel);
-	color: var(--gold);
-	text-shadow: 0 0 30px rgba(201, 169, 110, 0.25);
 }
 
 /* ── section-motion ──────────────────────────────────────────────────────── */
@@ -777,276 +749,6 @@ p {
 	text-transform: uppercase;
 }
 
-/* ── クレストモーダル ─────────────────────────────────────────────────────── */
-
-.crest-modal {
-	display: none;
-	position: fixed;
-	inset: 0;
-	z-index: 200;
-	align-items: center;
-	justify-content: center;
-	padding: 1.5rem;
-	box-sizing: border-box;
-}
-
-.crest-modal.is-open {
-	display: flex;
-}
-
-.crest-modal__backdrop {
-	position: absolute;
-	inset: 0;
-	background: rgba(3, 2, 1, 0.92);
-	-webkit-backdrop-filter: blur(10px);
-	backdrop-filter: blur(10px);
-	cursor: pointer;
-}
-
-.crest-modal__backdrop::after {
-	content: '';
-	position: absolute;
-	inset: 0;
-	background:
-		radial-gradient(ellipse 70% 50% at 20% 25%, rgba(201, 169, 110, 0.035) 0%, transparent 60%),
-		radial-gradient(ellipse 50% 40% at 80% 75%, rgba(90, 60, 160, 0.025) 0%, transparent 60%);
-	pointer-events: none;
-}
-
-.crest-modal__panel {
-	position: relative;
-	z-index: 1;
-	width: min(88vw, 640px);
-	max-height: 90vh;
-	overflow-y: auto;
-	text-align: center;
-	padding: 2.25rem clamp(1.75rem, 6vw, 3rem);
-	box-sizing: border-box;
-	background:
-		radial-gradient(ellipse 110% 45% at 50% 0%, var(--modal-glow, rgba(201, 169, 110, 0.14)) 0%, transparent 68%),
-		linear-gradient(175deg, #100e08 0%, #0d0c12 55%, #090b10 100%);
-	border: 1px solid rgba(201, 169, 110, 0.52);
-	box-shadow:
-		inset 0 0 0 5px rgba(201, 169, 110, 0.055),
-		inset 0 -2px 0 0 rgba(201, 169, 110, 0.12),
-		0 0 0 1px rgba(0, 0, 0, 0.65),
-		0 0 70px rgba(201, 169, 110, 0.05),
-		0 50px 120px rgba(0, 0, 0, 1);
-	animation: modal-gothic-in 0.45s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.crest-modal__panel::before {
-	content: '';
-	position: absolute;
-	inset: 7px;
-	border: 1px solid rgba(201, 169, 110, 0.13);
-	pointer-events: none;
-	z-index: 0;
-}
-
-@keyframes modal-gothic-in {
-	from {
-		opacity: 0;
-		transform: scale(0.88) translateY(12px);
-		filter: brightness(0.2);
-	}
-	to {
-		opacity: 1;
-		transform: scale(1) translateY(0);
-		filter: brightness(1);
-	}
-}
-
-.crest-modal__corners {
-	position: absolute;
-	inset: 0;
-	pointer-events: none;
-	z-index: 1;
-}
-
-.crest-modal__corners span {
-	position: absolute;
-	width: 16px;
-	height: 16px;
-}
-
-.crest-modal__corners span:nth-child(1) { top: 4px; left: 4px;    border-top:    1px solid rgba(201, 169, 110, 0.7); border-left:  1px solid rgba(201, 169, 110, 0.7); }
-.crest-modal__corners span:nth-child(2) { top: 4px; right: 4px;   border-top:    1px solid rgba(201, 169, 110, 0.7); border-right: 1px solid rgba(201, 169, 110, 0.7); }
-.crest-modal__corners span:nth-child(3) { bottom: 4px; left: 4px;  border-bottom: 1px solid rgba(201, 169, 110, 0.7); border-left:  1px solid rgba(201, 169, 110, 0.7); }
-.crest-modal__corners span:nth-child(4) { bottom: 4px; right: 4px; border-bottom: 1px solid rgba(201, 169, 110, 0.7); border-right: 1px solid rgba(201, 169, 110, 0.7); }
-
-.crest-modal__close {
-	position: absolute;
-	top: 0.75rem;
-	right: 0.85rem;
-	width: 28px;
-	height: 28px;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	font-size: 1.2rem;
-	color: rgba(201, 169, 110, 0.35);
-	z-index: 2;
-	background: none;
-	border: none;
-	cursor: pointer;
-	transition: color 0.25s, text-shadow 0.25s;
-}
-
-.crest-modal__close:hover {
-	color: rgba(201, 169, 110, 0.9);
-	text-shadow: 0 0 12px rgba(201, 169, 110, 0.5);
-}
-
-.crest-modal__ornament {
-	display: flex;
-	align-items: center;
-	gap: 0.65rem;
-	margin: 0.55rem 0;
-	position: relative;
-	z-index: 1;
-}
-
-.crest-modal__ornament span {
-	flex: 1;
-	height: 1px;
-	background: linear-gradient(90deg, transparent 0%, rgba(201, 169, 110, 0.32) 45%, rgba(201, 169, 110, 0.32) 55%, transparent 100%);
-}
-
-.crest-modal__ornament b {
-	font-weight: normal;
-	font-size: 0.48rem;
-	color: rgba(201, 169, 110, 0.5);
-}
-
-.crest-modal__crest-wrap {
-	position: relative;
-	display: block;
-	width: clamp(96px, 20vw, 136px);
-	margin: 0.4rem auto 0.6rem;
-}
-
-.crest-modal__crest-wrap::after {
-	content: '';
-	position: absolute;
-	inset: -28px;
-	background: radial-gradient(ellipse at center, var(--modal-glow, rgba(201, 169, 110, 0.18)) 0%, transparent 65%);
-	pointer-events: none;
-	border-radius: 50%;
-	z-index: -1;
-}
-
-.crest-modal__crest {
-	width: 100%;
-	height: auto;
-	filter: brightness(1.2) saturate(1.18) drop-shadow(0 0 20px rgba(201, 169, 110, 0.28));
-}
-
-.crest-modal__sep {
-	display: flex;
-	align-items: center;
-	gap: 0.85rem;
-	margin: 0.35rem 0 0.9rem;
-	position: relative;
-	z-index: 1;
-}
-
-.crest-modal__sep span {
-	flex: 1;
-	height: 1px;
-	background: linear-gradient(90deg, transparent 0%, rgba(201, 169, 110, 0.28) 50%, transparent 100%);
-}
-
-.crest-modal__sep b {
-	font-weight: normal;
-	font-size: 0.82rem;
-	color: rgba(201, 169, 110, 0.42);
-}
-
-.crest-modal__title {
-	font-family: var(--font-cinzel);.crest-modal__list li;
-	font-size: 2rem;
-	font-weight: 700;
-	color: #ede4d2;
-	letter-spacing: 0.07em;
-	margin: 0 0 1rem;
-	line-height: 1.3;
-	position: relative;
-	z-index: 1;
-	text-shadow: 0 0 40px rgba(201, 169, 110, 0.18);
-}
-
-.crest-modal__list {
-	text-align: left;
-	margin: 0 0 1.25rem;
-	padding: 0;
-	display: flex;
-	flex-direction: column;
-	gap: 0.5rem;
-	position: relative;
-	z-index: 1;
-	list-style: none;
-}
-
-.crest-modal__list li {
-    font-size: 1.8rem;
-    color: rgba(232, 224, 208, 0.65);
-    padding-left: 1.4em;
-    position: relative;
-    line-height: 1.75;
-    letter-spacing: 0.02em;
-}
-
-.crest-modal__list li::before {
-    content: '✦';
-    position: absolute;
-    left: 0;
-    top: 50%;
-    transform: translateY(-50%);
-    font-size: 0.5rem;
-}
-
-.crest-modal__detail-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.55em;
-    padding: 14px 30px;
-    position: relative;
-    z-index: 1;
-    border: 1px solid rgba(201, 169, 110, 0.42);
-    color: rgba(201, 169, 110, 0.75);
-    text-decoration: none;
-    font-family: var(--font-cinzel);
-    font-size: 1.6rem;
-    font-weight: 600;
-    letter-spacing: 0.24em;
-    line-height: 1;
-    text-transform: uppercase;
-    background: transparent;
-    transition: color 0.3s, border-color 0.3s, box-shadow 0.3s, background 0.3s;
-    margin-top: 24px;
-}
-
-.crest-modal__detail-btn::after {
-	content: '→';
-	font-family: sans-serif;
-	letter-spacing: 0;
-	transition: transform 0.3s;
-}
-
-.crest-modal__detail-btn:hover {
-	color: #ede4d2;
-	border-color: rgba(201, 169, 110, 0.75);
-	background: rgba(201, 169, 110, 0.07);
-	box-shadow:
-		0 0 28px rgba(201, 169, 110, 0.12),
-		inset 0 0 20px rgba(201, 169, 110, 0.04);
-}
-
-.crest-modal__detail-btn:hover::after {
-	transform: translateX(5px);
-}
-
 /* ── メディアクエリ: デスクトップ ────────────────────────────────────────── */
 
 @media (min-width: 1024px) {
@@ -1058,21 +760,18 @@ p {
 		font-size: 4vw;
 	}
 
-	.section-lead__txt,
-	.section-detail__txt {
+	.section-lead__txt {
 		padding: 0 2rem;
 		font-size: 2rem;
 		font-weight: 600;
 	}
 
-	.section-lead__txt.common-inner,
-	.section-detail__txt.common-inner {
+	.section-lead__txt.common-inner {
 		padding: 1.25rem 2rem;
 		color: rgba(237, 228, 210, 0.9);
 	}
 
-	.section-lead__ttl,
-	.section-detail__ttl {
+	.section-lead__ttl {
 		font-size: 6rem;
 	}
 
@@ -1155,10 +854,6 @@ p {
 	.section-detail__crest-label {
 		font-size: clamp(0.9rem, 4vw, 1.2rem);
 		margin-bottom: 0.6rem;
-	}
-
-	.crest-modal__panel {
-		width: min(96vw, 400px);
 	}
 
 	.page-foot__copy {

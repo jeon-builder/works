@@ -15,10 +15,17 @@
 </head>
 
 <body class="body body--before-load" data-scene="0">
-	<div class="page-load">
-		<svg class="page-load__spinner" aria-hidden="true">
-			<circle class="page-load__circle" cx="50%" cy="50%" r="25"></circle>
-		</svg>
+	<div class="page-load" role="status" aria-live="polite" aria-label="読み込み中">
+		<div class="page-load__inner">
+			<svg class="page-load__spinner" aria-hidden="true">
+				<circle class="page-load__circle" cx="50%" cy="50%" r="25"></circle>
+			</svg>
+			<p class="page-load__percent" aria-hidden="true">0%</p>
+			<p class="page-load__remain">残り <span class="page-load__remain-val">100</span>%</p>
+			<div class="page-load__bar" aria-hidden="true">
+				<div class="page-load__bar-fill"></div>
+			</div>
+		</div>
 	</div>
 	<div class="main" role="main">
 		<div class="main__inr">

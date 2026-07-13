@@ -89,6 +89,48 @@ p {
 	pointer-events: none;
 }
 
+.page-load__inner {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 1.2rem;
+	min-width: 220px;
+}
+
+.page-load__percent {
+	margin: 0;
+	font-family: var(--font-cinzel);
+	font-size: 3.2rem;
+	font-weight: 600;
+	line-height: 1;
+	color: var(--gold);
+	text-shadow: 0 0 20px var(--gold-glow);
+}
+
+.page-load__remain {
+	margin: 0;
+	font-size: 1.3rem;
+	color: rgba(237, 228, 210, 0.55);
+	letter-spacing: 0.08em;
+}
+
+.page-load__bar {
+	width: 220px;
+	height: 3px;
+	overflow: hidden;
+	border-radius: 999px;
+	background: rgba(255, 255, 255, 0.08);
+}
+
+.page-load__bar-fill {
+	width: 0;
+	height: 100%;
+	border-radius: inherit;
+	background: linear-gradient(to right, rgba(201, 169, 110, 0.45), var(--gold));
+	box-shadow: 0 0 12px var(--gold-glow);
+	transition: width 0.15s ease-out;
+}
+
 .body--before-load .main__inr {
 	display: none;
 }

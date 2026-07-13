@@ -1,6 +1,14 @@
 (() => {
   const ENABLE_PAGE_LOAD = true; // 開発中 false、本番 true
 
+  const pageLoadEl       = document.querySelector('.page-load');
+  const pageLoadPercent  = document.querySelector('.page-load__percent');
+  const pageLoadRemain   = document.querySelector('.page-load__remain-val');
+  const pageLoadBarFill  = document.querySelector('.page-load__bar-fill');
+
+  const loadTracker = { total: 0, loaded: 0, revealed: false };
+  let pageInitialized = false;
+
   // ── 状態管理 ──────────────────────────────────────────────────────────────
   let yOffset = 0;
   let prevScrollHeight = 0;
@@ -204,20 +212,60 @@
 
   // ── 画像ロード ──────────────────────────────────────────────────────────────
 
+  function updateLoadProgress() {
+    if (!loadTracker.total) return;
+
+    const percent = Math.min(100, Math.round((loadTracker.loaded / loadTracker.total) * 100));
+    const remain  = 100 - percent;
+
+    if (pageLoadPercent) pageLoadPercent.textContent = `${percent}%`;
+    if (pageLoadRemain)  pageLoadRemain.textContent  = `${remain}`;
+    if (pageLoadBarFill) pageLoadBarFill.style.width = `${percent}%`;
+    if (pageLoadEl)      pageLoadEl.setAttribute('aria-label', `読み込み中 ${percent}%`);
+
+    if (percent >= 100) revealPage();
+  }
+
+  function markAssetSettled() {
+    loadTracker.loaded = Math.min(loadTracker.loaded + 1, loadTracker.total);
+    updateLoadProgress();
+  }
+
+  function settleAsset(asset, isLoaded) {
+    if (asset.isSettled) return;
+    asset.isSettled = true;
+    asset.isLoaded = isLoaded;
+    asset.isBroken = !isLoaded;
+    markAssetSettled();
+  }
+
+  function initLoadTracker(total) {
+    loadTracker.total  = total;
+    loadTracker.loaded = 0;
+    updateLoadProgress();
+  }
+
   function loadFrameSequence(targetArray, directory, frameNumbers, ext = 'jpg') {
     const extStr = ext.startsWith('.') ? ext : `.${ext}`;
     for (const n of frameNumbers) {
       const img = new Image();
       img.isLoaded = false;
       img.isBroken = false;
-      img.onload  = () => { img.isLoaded = true; };
-      img.onerror = () => { img.isBroken = true; };
+      img.isSettled = false;
+      img.onload  = () => settleAsset(img, true);
+      img.onerror = () => settleAsset(img, false);
       img.src = `${directory}/IMG_${n}${extStr}`;
       targetArray.push(img);
     }
   }
 
   function setCanvasImages() {
+    initLoadTracker(
+      harryFrameNumbers.length +
+      harry2FrameNumbers.length +
+      sceneInfo[BLEND_SCENE].objs.imagesPath.length
+    );
+
     loadFrameSequence(sceneInfo[0].objs.videoImages, './video/harry',   harryFrameNumbers,  'webp')
     loadFrameSequence(sceneInfo[2].objs.videoImages, './video/harry02', harry2FrameNumbers, 'webp')
 
@@ -228,17 +276,19 @@
         Object.assign(imgElem, { src: path, loop: true, muted: true, autoplay: true, playsInline: true, preload: 'auto' });
         imgElem.isLoaded = false;
         imgElem.isBroken = false;
-        imgElem.addEventListener('loadeddata', () => { imgElem.isLoaded = true; });
-        imgElem.addEventListener('error',      () => { imgElem.isBroken = true; });
+        imgElem.isSettled = false;
+        imgElem.addEventListener('loadeddata', () => settleAsset(imgElem, true));
+        imgElem.addEventListener('error',      () => settleAsset(imgElem, false));
         imgElem.play().catch(() => {});
       } else {
         imgElem = new Image();
         imgElem.isLoaded = false;
         imgElem.isBroken = false;
-        imgElem.onload  = () => { imgElem.isLoaded = true; };
-        imgElem.onerror = () => { imgElem.isBroken = true; };
+        imgElem.isSettled = false;
+        imgElem.onload  = () => settleAsset(imgElem, true);
+        imgElem.onerror = () => settleAsset(imgElem, false);
         imgElem.src = path;
-        if (imgElem.complete && imgElem.naturalWidth > 0) imgElem.isLoaded = true;
+        if (imgElem.complete) settleAsset(imgElem, imgElem.naturalWidth > 0);
       }
       sceneInfo[BLEND_SCENE].objs.images.push(imgElem);
     }
@@ -512,12 +562,12 @@
 
   // ── 初期化 ─────────────────────────────────────────────────────────────────
 
-  window.addEventListener('load', () => {
-    setLayout();
-    if (ENABLE_PAGE_LOAD) document.body.classList.remove('body--before-load');
+  function initPage() {
+    if (pageInitialized) return;
+    pageInitialized = true;
+
     setLayout();
 
-    // 最初のフレームを即描画
     const firstFrame = sceneInfo[0].objs.videoImages[0];
     if (firstFrame) {
       const drawFirst = () => {
@@ -529,7 +579,6 @@
       firstFrame.isLoaded ? drawFirst() : firstFrame.addEventListener('load', drawFirst, { once: true });
     }
 
-    // ページ中間でリロードされた場合に正しい位置に再スクロール
     if (yOffset > 0) {
       let tempY = yOffset;
       let count = 0;
@@ -555,12 +604,28 @@
       scrollTo(0, 0);
       setTimeout(() => window.location.reload(), 500);
     });
+  }
 
-    if (ENABLE_PAGE_LOAD) {
-      document.querySelector('.page-load')?.addEventListener('transitionend', e => {
+  function revealPage() {
+    if (loadTracker.revealed) return;
+    loadTracker.revealed = true;
+
+    initPage();
+
+    if (!ENABLE_PAGE_LOAD) return;
+
+    document.body.classList.remove('body--before-load');
+    setLayout();
+
+    pageLoadEl?.addEventListener('transitionend', e => {
+      if (e.propertyName === 'opacity' && e.currentTarget.parentNode) {
         document.body.removeChild(e.currentTarget);
-      });
-    }
+      }
+    }, { once: true });
+  }
+
+  window.addEventListener('load', () => {
+    if (!ENABLE_PAGE_LOAD) revealPage();
   });
 
   setCanvasImages();
